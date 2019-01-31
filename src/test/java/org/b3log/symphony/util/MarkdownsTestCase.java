@@ -1,6 +1,6 @@
 /*
  * Symphony - A modern community (forum/BBS/SNS/blog) platform written in Java.
- * Copyright (C) 2012-2018, b3log.org & hacpai.com
+ * Copyright (C) 2012-2019, b3log.org & hacpai.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -33,13 +33,13 @@ import java.util.Collection;
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
  * @author <a href="http://zephyr.b3log.org">Zephyr</a>
- * @version 2.4.1.8, Oct 1, 2018
+ * @version 2.4.1.9, Oct 23, 2018
  * @since 0.1.6
  */
 public class MarkdownsTestCase {
 
     static {
-        Latkes.initRuntimeEnv();
+        Latkes.init();
         try {
             final Collection<Class<?>> classes = Discoverer.discover("org.b3log.symphony");
             BeanManager.start(classes);
@@ -47,7 +47,6 @@ public class MarkdownsTestCase {
             e.printStackTrace();
         }
     }
-
 
     /**
      * Tag test.

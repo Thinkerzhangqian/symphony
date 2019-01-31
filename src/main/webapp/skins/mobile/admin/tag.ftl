@@ -1,7 +1,7 @@
 <#--
 
     Symphony - A modern community (forum/BBS/SNS/blog) platform written in Java.
-    Copyright (C) 2012-2018, b3log.org & hacpai.com
+    Copyright (C) 2012-2019, b3log.org & hacpai.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as published by
@@ -29,13 +29,13 @@
             <input type="text" id="oId" value="${tag.oId}" readonly="readonly" />
 
             <label for="tagReferenceCount">${refCountLabel}</label>
-            <input type="text" id="tagReferenceCount" name="tagReferenceCount" value="${tag.tagReferenceCount}" readonly="readonly" />
+            <input type="text" id="tagReferenceCount" name="tagReferenceCount" value="${tag.tagReferenceCount?c}" readonly="readonly" />
 
             <label for="tagCommentCount">${commentCountLabel}</label>
-            <input type="text" id="tagCommentCount" name="tagCommentCount" value="${tag.tagCommentCount}" readonly="readonly" />
+            <input type="text" id="tagCommentCount" name="tagCommentCount" value="${tag.tagCommentCount?c}" readonly="readonly" />
 
             <label for="tagFollowerCount">${followerCountLabel}</label>
-            <input type="text" id="tagFollowerCount" name="tagFollowerCount" value="${tag.tagFollowerCount}" />
+            <input type="text" id="tagFollowerCount" name="tagFollowerCount" value="${tag.tagFollowerCount?c}" />
         </div>
     </div>
     <#if permissions["tagUpdateTagBasic"].permissionGrant>

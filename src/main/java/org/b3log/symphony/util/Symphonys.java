@@ -1,6 +1,6 @@
 /*
  * Symphony - A modern community (forum/BBS/SNS/blog) platform written in Java.
- * Copyright (C) 2012-2018, b3log.org & hacpai.com
+ * Copyright (C) 2012-2019, b3log.org & hacpai.com
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,11 +18,13 @@
 package org.b3log.symphony.util;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.b3log.latke.Latkes;
 import org.b3log.latke.ioc.BeanManager;
+import org.b3log.latke.logging.Level;
 import org.b3log.latke.logging.Logger;
-import org.b3log.latke.repository.jdbc.JdbcRepository;
 import org.b3log.latke.service.LangPropsService;
+import org.b3log.latke.util.Strings;
 import org.b3log.symphony.SymphonyServletListener;
 import org.b3log.symphony.model.Common;
 import org.b3log.symphony.model.Option;
@@ -33,30 +35,38 @@ import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
-import java.util.ResourceBundle;
+import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Symphony utilities.
  *
  * @author <a href="http://88250.b3log.org">Liang Ding</a>
- * @version 1.8.0.1, Sep 20, 2018
+ * @version 1.9.0.3, Dec 2, 2018
  * @since 0.1.0
  */
 public final class Symphonys {
 
     /**
+     * Logger.
+     */
+    private static final Logger LOGGER = Logger.getLogger(Symphonys.class);
+
+    /**
      * Configurations.
      */
-    public static final ResourceBundle CFG = ResourceBundle.getBundle("symphony");
+    public static final Properties CFG = new Properties();
 
     /**
      * User-Agent.
@@ -81,16 +91,41 @@ public final class Symphonys {
     /**
      * Thread pool.
      */
-    public static final ThreadPoolExecutor EXECUTOR_SERVICE = (ThreadPoolExecutor) Executors.newFixedThreadPool(50);
+    public static final ThreadPoolExecutor EXECUTOR_SERVICE = (ThreadPoolExecutor) Executors.newFixedThreadPool(128);
 
     /**
-     * Logger.
+     * Cron thread pool.
      */
-    private static final Logger LOGGER = Logger.getLogger(Symphonys.class);
+    public static final ScheduledExecutorService SCHEDULED_EXECUTOR_SERVICE = Executors.newScheduledThreadPool(4);
+
+    /**
+     * Available processors.
+     */
+    public static final int PROCESSORS = Runtime.getRuntime().availableProcessors();
+
+    static {
+        try {
+            InputStream resourceAsStream;
+            final String symPropsEnv = System.getenv("SYM_PROPS");
+            if (StringUtils.isNotBlank(symPropsEnv)) {
+                LOGGER.trace("Loading symphony.properties from env var [$SYM_PROPS=" + symPropsEnv + "]");
+                resourceAsStream = new FileInputStream(symPropsEnv);
+            } else {
+                LOGGER.trace("Loading symphony.properties from classpath [/symphony.properties]");
+                resourceAsStream = Latkes.class.getResourceAsStream("/symphony.properties");
+            }
+
+            CFG.load(resourceAsStream);
+        } catch (final Exception e) {
+            LOGGER.log(Level.ERROR, "Loads symphony.properties failed, exited", e);
+
+            System.exit(-1);
+        }
+    }
 
     static {
         // Loads reserved tags
-        final String reservedTags = CFG.getString("reservedTags");
+        final String reservedTags = CFG.getProperty("reservedTags");
         final String[] tags = reservedTags.split(",");
         RESERVED_TAGS = new String[tags.length];
 
@@ -101,7 +136,7 @@ public final class Symphonys {
         }
 
         // Loads white list tags
-        final String whiteListTags = CFG.getString("whitelist.tags");
+        final String whiteListTags = CFG.getProperty("whitelist.tags");
         final String[] wlTags = whiteListTags.split(",");
         WHITE_LIST_TAGS = new String[wlTags.length];
 
@@ -112,7 +147,7 @@ public final class Symphonys {
         }
 
         // Loads reserved usernames
-        final String reservedUserNames = CFG.getString("reservedUserNames");
+        final String reservedUserNames = CFG.getProperty("reservedUserNames");
         final String[] userNames = reservedUserNames.split(",");
         RESERVED_USER_NAMES = new String[userNames.length];
 
@@ -150,7 +185,7 @@ public final class Symphonys {
             @Override
             public void run() {
                 final String symURL = Latkes.getServePath();
-                if (Networks.isIPv4(symURL)) {
+                if (Strings.isIPv4(symURL)) {
                     return;
                 }
 
@@ -196,11 +231,20 @@ public final class Symphonys {
                             // ignore
                         }
                     }
-
-                    JdbcRepository.dispose();
                 }
             }
         }, 1000 * 60 * 60 * 2, 1000 * 60 * 60 * 12);
+    }
+
+    /**
+     * Gets the current process's id.
+     *
+     * @return the current process's id
+     */
+    public static long currentPID() {
+        final String processName = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
+
+        return Long.parseLong(processName.split("@")[0]);
     }
 
     /**
@@ -228,7 +272,7 @@ public final class Symphonys {
      * @return string property value corresponding to the specified key, returns {@code null} if not found
      */
     public static String get(final String key) {
-        return CFG.getString(key);
+        return CFG.getProperty(key);
     }
 
     /**
@@ -239,7 +283,6 @@ public final class Symphonys {
      */
     public static Boolean getBoolean(final String key) {
         final String stringValue = get(key);
-
         if (null == stringValue) {
             return null;
         }
